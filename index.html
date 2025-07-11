@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MASS DALAW</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #fceeee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+    h1 {
+      color: #b30000;
+      margin-bottom: 20px;
+    }
+    button.group-btn {
+      background-color: #ffcccc;
+      color: #660000;
+      border: none;
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button.group-btn.done {
+      background-color: #a8f0a5;
+      color: #003300;
+    }
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 10px;
+      z-index: 10;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 5;
+    }
+    .checkbox-row {
+      margin-bottom: 10px;
+    }
+    input[type="text"] {
+      margin-left: 10px;
+      padding: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>MASS DALAW</h1>
+  <button class="group-btn" onclick="openChecklist('grp1', this)">GRP 1</button>
+  <button class="group-btn" onclick="openChecklist('grp2', this)">GRP 2</button>
+  <button class="group-btn" onclick="openChecklist('grp3', this)">GRP 3</button>
+
+  <div id="overlay" class="overlay" style="display:none;" onclick="closePopup()"></div>
+  <div id="popup" class="popup" style="display:none;"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1sobxXZotMF_xFU12yujG0FGjTWmRWOA",
+      authDomain: "mass-dalaw.firebaseapp.com",
+      projectId: "mass-dalaw",
+      storageBucket: "mass-dalaw.appspot.com",
+      messagingSenderId: "759389412155",
+      appId: "1:759389412155:web:dbb1a4eaa8668fec87f51e",
+      measurementId: "G-96R0S805HN",
+      databaseURL: "https://mass-dalaw-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentGroupKey = "";
+    let currentButton = null;
+
+    function openChecklist(groupKey, buttonEl) {
+      currentGroupKey = groupKey;
+      currentButton = buttonEl;
+
+      document.getElementById("overlay").style.display = "block";
+      document.getElementById("popup").style.display = "block";
+      renderChecklist([]);
+      const dataRef = ref(db, groupKey);
+
+      onValue(dataRef, (snapshot) => {
+        const data = snapshot.val() || [];
+        renderChecklist(data);
+        checkIfDone(data);
+      });
+    }
+
+    function closePopup() {
+      document.getElementById("overlay").style.display = "none";
+      document.getElementById("popup").style.display = "none";
+    }
+
+    function renderChecklist(data) {
+      const popup = document.getElementById("popup");
+      popup.innerHTML = "";
+
+      data.forEach((item, index) => {
+        popup.appendChild(createRow(item.text, item.checked, index));
+      });
+
+      popup.appendChild(createRow("", false, data.length));
+    }
+
+    function createRow(text, checked, index) {
+      const row = document.createElement("div");
+      row.className = "checkbox-row";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = checked;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = text;
+
+      checkbox.onchange = () => saveRow(index, input.value, checkbox.checked);
+      input.oninput = () => saveRow(index, input.value, checkbox.checked);
+
+      row.appendChild(checkbox);
+      row.appendChild(input);
+      return row;
+    }
+
+    function saveRow(index, text, checked) {
+      const dataRef = ref(db, currentGroupKey);
+      onValue(dataRef, (snapshot) => {
+        let data = snapshot.val() || [];
+        data[index] = { text, checked };
+
+        if (index === data.length - 1 && text.trim() !== "") {
+          data.push({ text: "", checked: false });
+        }
+
+        set(dataRef, data);
+        checkIfDone(data);
+      }, { onlyOnce: true });
+    }
+
+    function checkIfDone(data) {
+      const hasUnchecked = data.some(item => item.text.trim() && !item.checked);
+      if (!hasUnchecked) {
+        currentButton.classList.add("done");
+      } else {
+        currentButton.classList.remove("done");
+      }
+    }
+  </script>
+</body>
+</html>
