@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <title>MASS DALAW</title>
   <style>
     body {
@@ -12,6 +12,7 @@
       flex-direction: column;
       align-items: center;
       padding: 30px;
+      margin: 0;
     }
     h1 {
       color: #b30000;
@@ -39,7 +40,7 @@
       transform: translate(-50%, -50%);
       background: white;
       padding: 20px;
-      max-height: 70vh;
+      height: 75vh;
       overflow-y: auto;
       box-shadow: 0 0 15px rgba(0,0,0,0.2);
       border-radius: 10px;
@@ -61,11 +62,18 @@
     }
     input[type="checkbox"] {
       margin-right: 10px;
+      width: 20px;
+      height: 20px;
     }
     input[type="text"] {
       flex: 1;
       padding: 8px;
       font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    input[type="text"]:focus {
+      outline: 2px solid #ffaaaa;
     }
   </style>
 </head>
@@ -76,7 +84,7 @@
   <button class="group-btn" onclick="openChecklist('grp3', this)">GRP 3</button>
 
   <div id="overlay" class="overlay" style="display:none;" onclick="closePopup()"></div>
-  <div id="popup" class="popup" style="display:none;"></div>
+  <div id="popup" class="popup" style="display:none;" onclick="event.stopPropagation()"></div>
 
   <!-- Firebase JS SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -145,6 +153,11 @@
       input.value = text;
       input.placeholder = "Type task here";
 
+      // Mobile fix: don't blur input when tapping outside
+      input.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+      });
+
       checkbox.onchange = () => saveRow(index, input.value, checkbox.checked);
       input.oninput = () => saveRow(index, input.value, checkbox.checked);
 
@@ -170,7 +183,7 @@
 
     function checkIfDone(data) {
       const hasUnchecked = data.some(item => item.text.trim() && !item.checked);
-      if (!hasUnchecked) {
+      if (!hasUnchecked && data.length > 0) {
         currentButton.classList.add("done");
       } else {
         currentButton.classList.remove("done");
